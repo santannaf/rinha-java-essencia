@@ -229,6 +229,10 @@ export async function checkPaymentsConsistency() {
             (backendPaymentsSummary.fallback.totalRequests - fallbackAdminPaymentsSummary.totalRequests)
         );
 
+    if (inconsistencies > 0) {
+        console.log(`Range: from: ${from} and to: ${to}`)
+    }
+
     paymentsInconsistencyCounter.add(inconsistencies);
 
     if (inconsistencies > 0) {

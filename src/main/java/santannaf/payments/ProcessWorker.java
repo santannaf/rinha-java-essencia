@@ -5,6 +5,9 @@ import santannaf.payments.redis.write.RedisWriteClient;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 public final class ProcessWorker {
     private final static ProcessWorker INSTANCE = new ProcessWorker();
@@ -16,6 +19,12 @@ public final class ProcessWorker {
     private final Integer workers;
 
     private static final byte[] KEY_PAYMENTS = "payments".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+
+    private static final int FAILS_TO_PAUSE = Integer.parseInt(System.getenv().getOrDefault("FAILS_TO_PAUSE", "3"));
+    private static final long PROBE_INTERVAL_MS = Long.parseLong(System.getenv().getOrDefault("PROBE_INTERVAL_MS", "100")) * 1_000_000L;
+
+    private final AtomicInteger failStreak = new AtomicInteger(0);
+    private final AtomicBoolean paused = new AtomicBoolean(false);
 
     private ProcessWorker() {
         String workers = System.getenv("NUM_WORKERS");
@@ -39,17 +48,31 @@ public final class ProcessWorker {
                 try (Jedis jedis = redisClient.pool.getResource()) {
                     start(jedis);
                 } catch (Exception _) {
-//                    e.printStackTrace();
                 }
             });
         }
     }
 
     private void start(Jedis jedis) {
-        while (true) {
+        for (; ; ) {
             try {
+                if (paused.get()) {
+                    if (client.isUp()) { // probe leve
+                        failStreak.set(0);
+                        paused.set(false);
+                    } else {
+                        LockSupport.parkNanos(PROBE_INTERVAL_MS);
+                    }
+                    continue;
+                }
+
                 semaphore.acquire();
                 PaymentRequest pr = queue.poll();
+                if (pr == null) { // corrida entre workers
+                    semaphore.release();
+                    continue;
+                }
+
                 processPayment(jedis, pr);
             } catch (Exception _) {
 //                e.printStackTrace();
@@ -57,17 +80,20 @@ public final class ProcessWorker {
         }
     }
 
-
     void processPayment(Jedis jedis, PaymentRequest pr) {
         if (client.processPayment(pr)) {
+            failStreak.set(0);
             var prr = pr.parseToDefault();
             final double score = prr.requestedAt;
             final byte[] member = DataBuilder.buildBytes(prr);
             jedis.zadd(KEY_PAYMENTS, score, member);
-            return;
+        } else {
+            queue.offer(pr);
+            semaphore.release();
+            if (failStreak.incrementAndGet() >= FAILS_TO_PAUSE) {
+                paused.set(true);
+            }
         }
-
-        producer(pr.requestData);
     }
 
     public void producer(byte[] paymentRequest) {
