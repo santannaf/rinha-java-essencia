@@ -1,0 +1,18 @@
+POST http://localhost:8080/payments
+Content-Type: application/json
+
+{
+  "correlationId": "688b5eed-c7fb-46f1-9ca0-d1a3651e174d",
+  "amount": 1500.00
+}
+###
+
+GET http://localhost:8080/payments-summary
+###
+
+GET http://localhost:8080/payments-summary?from=2020-07-10T12:34:56.000Z&to=2025-08-12T12:35:56.000Z
+###
+
+GET http://localhost:8001/admin/payments-summary
+X-Rinha-Token: 123
+###
