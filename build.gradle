@@ -33,7 +33,7 @@ graalvmNative {
         main {
             imageName = "rinha"
             buildArgs(
-                    "-march=native",
+                    "-march=skylake",
                     "-O3",
                     "--gc=serial",
                     "--no-server"
