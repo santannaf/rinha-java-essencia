@@ -18,6 +18,7 @@ public final class PaymentProcessorClient {
     private final HttpClient httpClient = HttpClientConfig.httpClient();
 
     private final long backoff;
+    private final int retry;
 
     public static PaymentProcessorClient getInstance() {
         return INSTANCE;
@@ -43,8 +44,8 @@ public final class PaymentProcessorClient {
         System.out.println("fallback: " + fallbackUrl);
         System.out.println("======================================");
 
-        int n = Integer.parseInt(System.getenv().getOrDefault("NUM_BACK_OFF", "250"));
-        backoff = n * 1_000_000L;
+        backoff = Integer.parseInt(System.getenv().getOrDefault("NUM_BACK_OFF", "15")) * 1_000_000L;
+        retry = Integer.parseInt(System.getenv().getOrDefault("NUM_RETRY", "15"));
 
         defaultURI = URI.create(defaultUrl);
         fallbackURI = URI.create(fallbackUrl);
@@ -53,7 +54,7 @@ public final class PaymentProcessorClient {
     public boolean processPayment(PaymentRequest paymentRequest) {
         var request = buildRequest(paymentRequest.getPostData(), defaultURI);
 
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < retry; i++) {
             if (sendPayment(request)) {
                 return true;
             }

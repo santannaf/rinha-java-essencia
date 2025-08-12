@@ -19,9 +19,11 @@ public final class RedisWriteClient {
 
         int n = Integer.parseInt(System.getenv().getOrDefault("NUM_WORKERS_WRITE", "10"));
 
-        cfg.setMaxTotal(Math.max(2 * n, 32));
+//        cfg.setMaxTotal(Math.max(2 * n, 32));
+        cfg.setMaxTotal(n);
         cfg.setMaxIdle(n);
-        cfg.setMinIdle(Math.min(8, n));
+//        cfg.setMinIdle(Math.min(8, n));
+        cfg.setMinIdle(n);
 
         cfg.setBlockWhenExhausted(true);
         cfg.setJmxEnabled(false);

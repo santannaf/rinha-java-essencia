@@ -46,7 +46,8 @@ services:
       - NUM_WORKERS_WRITE=10
       - NUM_WORKERS=10
       - NUM_BACK_OFF=10
-      - FAILS_TO_PAUSE=5
+      - FAILS_TO_PAUSE=3
+      - NUM_RETRY=10
     networks:
       - backend
       - payment-processor
@@ -73,7 +74,8 @@ services:
       - NUM_WORKERS_WRITE=10
       - NUM_WORKERS=10
       - NUM_BACK_OFF=10
-      - FAILS_TO_PAUSE=5
+      - FAILS_TO_PAUSE=3
+      - NUM_RETRY=10
 
 networks:
   backend:

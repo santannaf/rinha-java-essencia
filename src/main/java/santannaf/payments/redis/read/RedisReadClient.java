@@ -18,9 +18,12 @@ public class RedisReadClient {
 
         int n = Integer.parseInt(System.getenv().getOrDefault("NUM_WORKERS_READ", "10"));
 
-        cfg.setMaxTotal(Math.max(2 * n, 32));
+//        cfg.setMaxTotal(Math.max(2 * n, 32));
+//        cfg.setMaxIdle(n);
+//        cfg.setMinIdle(Math.min(8, n));
+        cfg.setMaxTotal(n);
         cfg.setMaxIdle(n);
-        cfg.setMinIdle(Math.min(8, n));
+        cfg.setMinIdle(n);
 
         cfg.setBlockWhenExhausted(true);
         cfg.setJmxEnabled(false);
